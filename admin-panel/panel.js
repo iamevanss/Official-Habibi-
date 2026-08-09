@@ -271,7 +271,7 @@ async function openUserDetail(memberId) {
 
     const killBtn = body.querySelector('#btn-kill')
     if (killBtn) killBtn.addEventListener('click', async () => {
-      if (!confirm(`Kill ${memberId}? This wipes their balance, vehicle, house, and marriage vault.`)) return
+      if (!confirm(`Kill ${memberId}? This wipes their balance and inventory, and locks them out for 25 minutes.`)) return
       try {
         await post(`/user/${encodeURIComponent(memberId)}/kill`, { hours: 1 })
         toast(`${memberId} killed`)
