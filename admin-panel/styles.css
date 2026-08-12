@@ -189,12 +189,25 @@ input, select {
   outline: none;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
+.field textarea {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: var(--text-hi);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
 .field input::placeholder { color: var(--text-faint); }
-.field input:focus, .field select:focus {
+.field textarea::placeholder { color: var(--text-faint); }
+.field input:focus, .field select:focus, .field textarea:focus {
   border-color: var(--glow-blue);
   background: rgba(91,140,255,0.08);
 }
-.field input:focus-visible, .field select:focus-visible, button:focus-visible {
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible, button:focus-visible {
   outline: 2px solid var(--glow-blue);
   outline-offset: 2px;
 }

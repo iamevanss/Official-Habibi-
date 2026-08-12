@@ -47,7 +47,7 @@ function switchSection(name) {
   if (name === 'users') loadUsers()
   if (name === 'groups') loadGroups()
   if (name === 'shop') loadShop()
-  if (name === 'vaults') loadVaults()
+  if (name === 'vaults') { loadVaults(); loadProposals() }
   if (name === 'dead') loadDead()
   if (name === 'moderators') loadModerators()
   if (name === 'settings') loadSettings()
@@ -438,6 +438,41 @@ async function loadVaults() {
   }
 }
 
+async function loadProposals() {
+  const list = document.getElementById('proposal-list')
+  list.innerHTML = '<div class="empty-state">Loading…</div>'
+  try {
+    const { proposals } = await get('/proposals')
+    list.innerHTML = proposals.length
+      ? proposals.map((p) => `
+        <div class="row" data-id="${escapeHtml(p.id)}">
+          <div class="row-main">
+            <div class="row-name">💌 ${escapeHtml(p.proposerName)} → ${escapeHtml(p.targetName)}</div>
+            <div class="row-sub">proposed ${timeAgo(p.proposedAt)}</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn-danger btn-wipe-proposal">Wipe</button>
+          </div>
+        </div>`).join('')
+      : '<div class="empty-state">No pending proposals.</div>'
+
+    list.querySelectorAll('.btn-wipe-proposal').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('.row').dataset.id
+        if (!confirm('Wipe this proposal?')) return
+        try {
+          await post(`/proposal/${encodeURIComponent(id)}/wipe`)
+          toast('Proposal wiped')
+          loadProposals()
+        } catch (err) { toast(err.message, 'err') }
+      })
+    })
+  } catch (err) {
+    toast(err.message, 'err')
+    list.innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`
+  }
+}
+
 // ============================================================
 // Dead / revive
 // ============================================================
@@ -535,6 +570,14 @@ async function loadSettings() {
   } catch (err) {
     toast(err.message, 'err')
   }
+
+  try {
+    const { version, text } = await get('/changelog')
+    document.getElementById('changelog-version').value = version || ''
+    document.getElementById('changelog-text').value = text || ''
+  } catch (err) {
+    toast(err.message, 'err')
+  }
 }
 
 document.getElementById('toggle-ai').addEventListener('click', async (e) => {
@@ -546,6 +589,19 @@ document.getElementById('toggle-ai').addEventListener('click', async (e) => {
     toast(`AI replies turned ${next ? 'on' : 'off'}`)
   } catch (err) {
     toggle.setAttribute('aria-checked', String(!next))
+    toast(err.message, 'err')
+  }
+})
+
+document.getElementById('changelog-form').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const version = document.getElementById('changelog-version').value.trim()
+  const text = document.getElementById('changelog-text').value.trim()
+  if (!version || !text) return toast('Fill in both version and what\'s new', 'err')
+  try {
+    await post('/changelog', { version, text })
+    toast('Changelog saved — will broadcast on next restart if the version is new')
+  } catch (err) {
     toast(err.message, 'err')
   }
 })

@@ -180,6 +180,10 @@
         <div class="panel-head"><h2>Marriage vaults</h2></div>
         <div class="table-wrap" id="vault-list"><div class="empty-state">Loading…</div></div>
       </div>
+      <div class="panel glass">
+        <div class="panel-head"><h2>Pending proposals</h2></div>
+        <div class="table-wrap" id="proposal-list"><div class="empty-state">Loading…</div></div>
+      </div>
     </section>
 
     <section class="view" id="view-dead">
@@ -218,6 +222,23 @@
           <div class="kv-row"><span>Bot number</span><span id="settings-bot-number">—</span></div>
           <div class="kv-row"><span>State</span><span id="settings-state">—</span></div>
         </div>
+      </div>
+      <div class="panel glass">
+        <div class="panel-head"><h2>Changelog</h2></div>
+        <p class="setting-sub" style="margin-bottom:12px;">Saving this arms a one-time broadcast to every group on the bot's next restart — only if the version below is new. Use it right when you deploy.</p>
+        <form id="changelog-form" class="stack-form">
+          <label class="field">
+            <span>Version</span>
+            <input type="text" id="changelog-version" placeholder="e.g. 1.4.0" />
+          </label>
+          <label class="field">
+            <span>What's new</span>
+            <textarea id="changelog-text" rows="4" placeholder="Short summary of what changed"></textarea>
+          </label>
+          <div class="row-actions">
+            <button type="submit" class="btn-primary">Save changelog</button>
+          </div>
+        </form>
       </div>
     </section>
   </div>
