@@ -37,6 +37,7 @@ It's designed for one thing: giving a group a reason to keep talking.
 | 💍 **Marriage system** | Propose, accept, shared vault with deposits/withdrawals, 50/50 split on divorce |
 | 🎲 **Gambling** | `.flip` — double or nothing |
 | 🏆 **Global leaderboard** | Top 20 by balance, across all groups |
+| ☀️ **Scheduled broadcasts** | AI-generated (Groq) motivational quotes at 6am/11pm WAT to every group, plus a one-time changelog announcement after real deploys |
 | 👋 **Auto-welcomes** | New members get roasted on arrival (skipped for bulk adds) |
 | 🔒 **Group-only** | Ignores DMs and status broadcasts entirely |
 | 🌍 **Multi-group** | One global wallet per user, shared across every group the bot is in |
@@ -60,6 +61,8 @@ It's designed for one thing: giving a group a reason to keep talking.
 | `.immunity <hours>` | Buy steal protection — ₻2,000/hour |
 | `.marry` / `.propose @user` | Propose marriage |
 | `.accept` | Accept a pending proposal |
+| `.reject` | Turn down a proposal made to you |
+| `.cancel` | Withdraw a proposal you sent |
 | `.divorce` | End it, vault splits 50/50 |
 | `.vault` | Check your marriage vault |
 | `.deposit <amount>` | Add Habz to the vault |
@@ -75,12 +78,18 @@ flowchart LR
     Bot --> MH["messageHandler.js"]
     MH --> ECO["economy.js"]
     MH --> AI["ai.js (Groq)"]
+    Bot --> SCHED["scheduler.js"]
+    SCHED --> ECO
+    SCHED --> AI
     ECO <--> DB[("Supabase / Postgres")]
     AI <--> DB
     Bot <--> AUTH["supabaseAuthState.js"]
     AUTH <--> DB
-    Bot --> WS["WebSocket + Admin API"]
-    WS --> DASH["Admin dashboard (planned)"]
+    Bot --> API["adminApi.js"]
+    Bot --> WS["websocket.js"]
+    API <--> DB
+    API --> DASH["Admin dashboard (Vercel)"]
+    WS --> DASH
     TG["Telegram"] <-->|pairing control| Bot
 ```
 
@@ -95,7 +104,7 @@ Session credentials, economy state, and AI chat history all live in Supabase —
 | AI | Groq — `llama-3.3-70b-versatile` |
 | Pairing control | Telegram bot, owner-only |
 | Process management | PM2 |
-| Hosting | Oracle Cloud (Ampere A1, ARM) — Railway/Render configs also included as alternatives |
+| Hosting | Any Linux VPS (currently Oracle Cloud, Ampere A1/E2 depending on capacity) via Cloudflare Tunnel for HTTPS — Railway/Render configs also included as alternatives |
 | Live updates | `ws` — broadcasts economy events for a future admin dashboard |
 
 ## 🛡 Reliability & engineering
@@ -120,13 +129,21 @@ habibi-whatsapp/
 ├── Procfile                   Render/Railway process definition
 ├── render.yaml                 Render one-click deploy config
 ├── .env.example
-└── lib/
-    ├── economy.js              Wallet, steal, heists, marriage, immunity, coinflip, levels
-    ├── messageHandler.js        Routes incoming messages: text counting, commands, AI triggers
-    ├── ai.js                     Groq personality, anti-jailbreak, per-user chat history
-    ├── supabaseAuthState.js       Baileys auth state backed by Supabase (survives redeploys)
-    ├── adminApi.js                 REST admin API (leaderboard, broadcasts, balance adjustments)
-    └── websocket.js                 Real-time event feed for the admin API
+├── lib/
+│   ├── economy.js              Wallet, steal, heists, marriage, immunity, coinflip, levels
+│   ├── messageHandler.js        Routes incoming messages: text counting, commands, AI triggers
+│   ├── ai.js                     Groq personality, anti-jailbreak, per-user chat history, scheduled quotes
+│   ├── scheduler.js               Daily quote broadcasts + version-gated changelog announcements
+│   ├── supabaseAuthState.js        Baileys auth state backed by Supabase (survives redeploys)
+│   ├── adminApi.js                  REST admin API (leaderboard, broadcasts, balance adjustments)
+│   └── websocket.js                  Real-time event feed for the admin API
+└── admin-panel/               Standalone dashboard, deployed separately (Vercel)
+    ├── login.html               Sign-in page
+    ├── panel.html                Dashboard shell
+    ├── shared.js                  Session storage, API client, formatting — used by both pages
+    ├── login.js                    Sign-in logic
+    ├── panel.js                     Dashboard logic (users, groups, shop, vaults, dead, mods, settings)
+    └── styles.css                   Shared styling
 ```
 
 ## 🚀 Getting started
@@ -151,6 +168,7 @@ npm start
 | `TELEGRAM_OWNER_ID` | Your Telegram chat ID — only this ID can issue pairing/admin commands |
 | `GROQ_API_KEY` | API key from console.groq.com |
 | `ADMIN_SECRET` | Shared secret for the REST admin API + WebSocket feed |
+| `ALLOWED_ORIGIN` | Your admin panel's URL (e.g. `https://your-panel.vercel.app`) — the only origin allowed to call the admin API from a browser |
 | `PORT` | HTTP port (defaults to 3000; auto-set on Railway/Render) |
 
 Once running, message your Telegram bot with `/start`, then `/pair <phone number>` (country code, no `+`) to link WhatsApp.
@@ -159,7 +177,7 @@ Once running, message your Telegram bot with `/start`, then `/pair <phone number
 
 Pick whichever fits your setup:
 
-- **[DEPLOY-ORACLE.md](./DEPLOY-ORACLE.md)** — Oracle Cloud Always Free VPS (current production setup)
+- **[DEPLOY-VPS.md](./DEPLOY-VPS.md)** — any VPS provider (current production setup, via Cloudflare Tunnel — no domain required)
 - **[DEPLOY.md](./DEPLOY.md)** — Railway
 - **[DEPLOY-RENDER.md](./DEPLOY-RENDER.md)** — Render
 
@@ -170,8 +188,10 @@ Pick whichever fits your setup:
 - [x] AI personality with per-user memory
 - [x] Supabase-backed auth (survives redeploys, no re-pairing on migration)
 - [x] REST admin API + real-time WebSocket event feed
-- [ ] Cron scheduler — timed airdrops, midnight steal-reset, weekly leaderboard reset + recap
-- [ ] Admin dashboard frontend
+- [x] Admin dashboard frontend — separate login/panel pages, live event feed, users, groups, shop (weapons/vehicles/houses), marriage vaults + pending proposals, dead/revive, moderators, settings
+- [x] Scheduler — auto-airdrops, daily motivational quote broadcasts (AI-generated with a curated fallback), version-gated changelog announcements on deploy
+- [ ] Midnight steal-reset
+- [ ] Weekly leaderboard reset + recap
 
 ## 🤝 Contributing
 
