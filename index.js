@@ -14,6 +14,7 @@ import { handleIncomingMessage, handleGroupParticipantsUpdate } from './lib/mess
 import { adminRouter } from './lib/adminApi.js'
 import { initWebSocket } from './lib/websocket.js'
 import { createGroupAirdrop, getActiveGroupIds, hasUnclaimedAirdrop } from './lib/economy.js'
+import { startBroadcastScheduler } from './lib/scheduler.js'
 
 // Baileys calls groupMetadata() internally on every single outgoy group message
 // (to resolve the participant list for encryption) unless a cache is provided.
@@ -113,8 +114,6 @@ function startAutoAirdropScheduler() {
 const app = express()
 const server = http.createServer(app)
 
-app.set('startTime', Date.now())
-app.set('connectionState', 'connecting')
 app.use('/api', adminRouter)
 
 // A single uncaught error anywhere (Baileys internals, Telegram polling, a stray
@@ -233,8 +232,6 @@ async function connectToWhatsApp() {
             notifyOwner('Habibi is ready to pair. Send /pair <phone number> (country code, no +).')
         }
 
-        if (connection) app.set('connectionState', connection)
-
         if (connection === 'close') {
             const shouldReconnect =
                 lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
@@ -272,6 +269,10 @@ async function connectToWhatsApp() {
             autoRetryStopped = false
             notifyOwner('Habibi connected successfully.')
             startAutoAirdropScheduler()
+            // Getter, not `sock` directly — see scheduler.js for why: this
+            // module-level `sock` gets reassigned on every reconnect, and the
+            // scheduler needs to always read the live one.
+            startBroadcastScheduler(() => sock)
 
             // Warm the group metadata cache immediately so the very first
             // message sent doesn't have to hit a live groupMetadata query.
