@@ -240,6 +240,36 @@
           </div>
         </form>
       </div>
+      <div class="panel glass">
+        <div class="panel-head"><h2>Bonus event</h2></div>
+        <div id="event-status" class="setting-sub" style="margin-bottom:14px;">Loading…</div>
+        <form id="event-form" class="stack-form">
+          <label class="field">
+            <span>Type</span>
+            <select id="event-type">
+              <option value="double_xp">Double XP</option>
+              <option value="double_steal">Crime Wave — Steal</option>
+              <option value="double_rob">Crime Wave — Heist</option>
+              <option value="shop_discount">Shop Sale</option>
+              <option value="double_flip">Double Flip</option>
+            </select>
+          </label>
+          <div class="row-2">
+            <label class="field">
+              <span>Duration (minutes)</span>
+              <input type="number" id="event-minutes" placeholder="60" min="1" />
+            </label>
+            <label class="field field-narrow">
+              <span>Multiplier (optional)</span>
+              <input type="number" id="event-multiplier" placeholder="default" step="0.1" min="0.1" />
+            </label>
+          </div>
+          <div class="row-actions">
+            <button type="submit" class="btn-primary">Start event</button>
+            <button type="button" class="btn-danger" id="btn-stop-event">Stop event</button>
+          </div>
+        </form>
+      </div>
     </section>
   </div>
 </div>

@@ -578,6 +578,20 @@ async function loadSettings() {
   } catch (err) {
     toast(err.message, 'err')
   }
+
+  loadEventStatus()
+}
+
+async function loadEventStatus() {
+  const status = document.getElementById('event-status')
+  try {
+    const { active } = await get('/event')
+    status.textContent = active
+      ? `${active.emoji} ${active.label} is running — ${active.description} (ends ${timeUntil(active.expiresAt)})`
+      : 'No event is currently running.'
+  } catch (err) {
+    status.textContent = 'Could not load event status.'
+  }
 }
 
 document.getElementById('toggle-ai').addEventListener('click', async (e) => {
@@ -601,6 +615,32 @@ document.getElementById('changelog-form').addEventListener('submit', async (e) =
   try {
     await post('/changelog', { version, text })
     toast('Changelog saved — will broadcast on next restart if the version is new')
+  } catch (err) {
+    toast(err.message, 'err')
+  }
+})
+
+document.getElementById('event-form').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const type = document.getElementById('event-type').value
+  const minutes = Number(document.getElementById('event-minutes').value)
+  const multiplierRaw = document.getElementById('event-multiplier').value
+  const multiplier = multiplierRaw ? Number(multiplierRaw) : undefined
+  if (!minutes || minutes <= 0) return toast('Enter a valid duration in minutes', 'err')
+  try {
+    await post('/event/start', { type, minutes, multiplier })
+    toast('Event started and announced to every group')
+    loadEventStatus()
+  } catch (err) {
+    toast(err.message, 'err')
+  }
+})
+
+document.getElementById('btn-stop-event').addEventListener('click', async () => {
+  try {
+    await post('/event/stop')
+    toast('Event stopped')
+    loadEventStatus()
   } catch (err) {
     toast(err.message, 'err')
   }
