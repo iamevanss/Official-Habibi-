@@ -114,6 +114,13 @@ function startAutoAirdropScheduler() {
 const app = express()
 const server = http.createServer(app)
 
+// Both are read by adminApi.js (GET /status) but were never being written
+// anywhere — connectionState always fell back to its 'unknown' default and
+// startTime always fell back to "right now" at request time, making uptime
+// permanently read ~0m regardless of how long the bot had actually been up.
+app.set('startTime', Date.now())
+app.set('connectionState', 'connecting')
+
 app.use('/api', adminRouter)
 
 // A single uncaught error anywhere (Baileys internals, Telegram polling, a stray
@@ -232,7 +239,12 @@ async function connectToWhatsApp() {
             notifyOwner('Habibi is ready to pair. Send /pair <phone number> (country code, no +).')
         }
 
+        if (connection === 'connecting') {
+            app.set('connectionState', 'connecting')
+        }
+
         if (connection === 'close') {
+            app.set('connectionState', 'close')
             const shouldReconnect =
                 lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
 
@@ -264,6 +276,8 @@ async function connectToWhatsApp() {
             }
         } else if (connection === 'open') {
             console.log('Habibi connected successfully')
+            app.set('connectionState', 'open')
+            app.set('startTime', Date.now()) // uptime tracks the current live connection, not raw process age
             isReadyForPairing = false
             reconnectAttempts = 0
             autoRetryStopped = false
