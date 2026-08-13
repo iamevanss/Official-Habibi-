@@ -49,6 +49,7 @@ function switchSection(name) {
   if (name === 'shop') loadShop()
   if (name === 'vaults') { loadVaults(); loadProposals() }
   if (name === 'dead') loadDead()
+  if (name === 'gangs') loadGangs()
   if (name === 'moderators') loadModerators()
   if (name === 'settings') loadSettings()
 }
@@ -502,6 +503,41 @@ async function loadDead() {
           await post(`/user/${encodeURIComponent(memberId)}/revive`)
           toast(`${memberId} revived`)
           loadDead()
+        } catch (err) { toast(err.message, 'err') }
+      })
+    })
+  } catch (err) {
+    toast(err.message, 'err')
+    list.innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`
+  }
+}
+
+async function loadGangs() {
+  const list = document.getElementById('gang-list')
+  list.innerHTML = '<div class="empty-state">Loading…</div>'
+  try {
+    const { gangs } = await get('/gangs')
+    list.innerHTML = gangs.length
+      ? gangs.map((g) => `
+        <div class="row" data-id="${escapeHtml(g.id)}">
+          <div class="row-main">
+            <div class="row-name">🔫 ${escapeHtml(g.name)}</div>
+            <div class="row-sub">${g.memberCount}/10 members · vault: ${fmtHabz(g.vault_balance)} habz</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn-danger btn-disband-gang">Disband</button>
+          </div>
+        </div>`).join('')
+      : '<div class="empty-state">No gangs yet.</div>'
+
+    list.querySelectorAll('.btn-disband-gang').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('.row').dataset.id
+        if (!confirm('Disband this gang? Vault splits evenly among members. This cannot be undone.')) return
+        try {
+          await post(`/gang/${encodeURIComponent(id)}/disband`)
+          toast('Gang disbanded')
+          loadGangs()
         } catch (err) { toast(err.message, 'err') }
       })
     })
