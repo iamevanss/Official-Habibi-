@@ -521,14 +521,33 @@ async function loadGangs() {
       ? gangs.map((g) => `
         <div class="row" data-id="${escapeHtml(g.id)}">
           <div class="row-main">
-            <div class="row-name">🔫 ${escapeHtml(g.name)}</div>
+            <div class="row-name gang-name-display">🔫 ${escapeHtml(g.name)}</div>
             <div class="row-sub">${g.memberCount}/10 members · vault: ${fmtHabz(g.vault_balance)} habz</div>
           </div>
           <div class="row-actions">
+            <button class="btn-secondary btn-rename-gang">Rename</button>
             <button class="btn-danger btn-disband-gang">Disband</button>
           </div>
         </div>`).join('')
       : '<div class="empty-state">No gangs yet.</div>'
+
+    list.querySelectorAll('.btn-rename-gang').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const row = btn.closest('.row')
+        const id = row.dataset.id
+        const nameEl = row.querySelector('.gang-name-display')
+        const currentName = nameEl.textContent.replace('🔫 ', '')
+        const newName = prompt('New gang name:', currentName)
+        if (newName === null) return // cancelled
+        const trimmed = newName.trim()
+        if (!trimmed || trimmed === currentName) return
+        try {
+          await put(`/gang/${encodeURIComponent(id)}/name`, { name: trimmed })
+          toast('Gang renamed')
+          loadGangs()
+        } catch (err) { toast(err.message, 'err') }
+      })
+    })
 
     list.querySelectorAll('.btn-disband-gang').forEach((btn) => {
       btn.addEventListener('click', async () => {
